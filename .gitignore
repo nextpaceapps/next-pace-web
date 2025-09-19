@@ -39,3 +39,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Ignore Cursor docs
+.cursor/doc/
+
+# Environment and build artifacts
+coverage/
+.turbo/
+.next/
+.vercel/
+.cursor/
+docs/
+doc/
+documentation/
