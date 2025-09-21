@@ -2,8 +2,7 @@ import Image from "next/image"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/auth"
 import { redirect } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { signOut } from "next-auth/react"
+import { LogoutButton } from "@/components/header/LogoutButton"
 
 export default async function ProfilePage() {
   const session = await getServerSession(authOptions)
@@ -23,9 +22,9 @@ export default async function ProfilePage() {
         ) : null}
         <p className="text-sm">Name: {user?.name ?? "-"}</p>
         <p className="text-sm">Email: {user?.email ?? "-"}</p>
-        <form action={async () => { "use server"; }} className="mt-4">
-          <Button type="button" variant="outline" onClick={() => signOut({ callbackUrl: "/login" })}>Logout</Button>
-        </form>
+        <div className="mt-4">
+          <LogoutButton />
+        </div>
       </section>
     </main>
   )

@@ -10,7 +10,7 @@ export default function LoginPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Login</h1>
         <p className="mt-2 text-sm text-gray-500">Continue with your Google account.</p>
         <div className="mt-6">
-          <Button type="button" onClick={() => signIn("google")}>Continue with Google</Button>
+          <Button type="button" onClick={() => signIn("google", { callbackUrl: "/profile" })}>Continue with Google</Button>
         </div>
       </div>
     </main>
