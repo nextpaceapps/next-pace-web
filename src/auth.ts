@@ -22,10 +22,15 @@ export const authOptions: NextAuthOptions = {
     },
     async jwt({ token, account, user }) {
       console.log("[auth:callback:jwt] hasAccount=", !!account, "hasUser=", !!user)
+      // token.sub is assigned by NextAuth; ensure present
       return token
     },
-    async session({ session }) {
-      console.log("[auth:callback:session] userEmail=", session.user?.email)
+    async session({ session, token }) {
+      // expose stable subject on session.user.id
+      if (session.user) {
+        session.user.id = token.sub ?? null
+      }
+      console.log("[auth:callback:session] userId=", session.user?.id, "userEmail=", session.user?.email)
       return session
     },
     async redirect({ url, baseUrl }) {
