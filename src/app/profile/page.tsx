@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 import { LogoutButton } from "@/components/header/LogoutButton"
 import ConnectSection from "./ConnectSection"
 import { headers } from "next/headers"
+import { getDb } from "@/lib/db"
 
 export default async function ProfilePage() {
   const session = await getServerSession(authOptions)
@@ -12,6 +13,9 @@ export default async function ProfilePage() {
     redirect("/login")
   }
   const user = session.user
+  // Check if user exists; if not, show inline prompt
+  const db = await getDb()
+  const existing = await db.query('select id from users where subject=$1', [user.id])
   const h = await headers()
   let connectError: string | null = null
   const xUrl = h.get("x-url")
@@ -25,10 +29,21 @@ export default async function ProfilePage() {
   }
   return (
     <main className="mx-auto max-w-2xl p-6">
-      <header className="mb-6">
+      <header className="mb-4">
         <h1 className="text-2xl font-semibold tracking-tight">Your Profile</h1>
         <p className="mt-2 text-sm text-gray-500">You are signed in with Google.</p>
       </header>
+      {existing.rowCount === 0 ? (
+        <div className="mb-4 rounded-md border bg-yellow-50 p-3 text-sm">
+          <form action="/api/users/create" method="post" className="flex items-center justify-between gap-3">
+            <span>Create an account with your Google info?</span>
+            <div className="flex gap-2">
+              <button className="border px-3 py-1 rounded-md" type="submit">Yes</button>
+              <a className="border px-3 py-1 rounded-md" href="/create-account">No</a>
+            </div>
+          </form>
+        </div>
+      ) : null}
       {connectError === "garmin" ? (
         <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
           Garmin connection was not completed. Please try again.
