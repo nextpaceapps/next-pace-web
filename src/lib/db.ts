@@ -31,6 +31,16 @@ async function ensureSchema(c: Client) {
       unique(provider, provider_activity_id)
     );
   `)
+  await c.query(`
+    create table if not exists users (
+      id bigserial primary key,
+      subject text not null unique,
+      name text,
+      email text,
+      image_url text,
+      created_at timestamptz not null default now()
+    );
+  `)
 }
 
 
