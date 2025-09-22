@@ -4,13 +4,18 @@ import { authOptions } from "@/auth"
 import { integrationService } from "@/lib/services/integrationService.mock"
 import { Card } from "@/components/ui/card"
 import { buttonVariants } from "@/components/ui/button"
+import { cookies } from "next/headers"
+import { DisconnectButton } from "./DisconnectButton"
 import { cn } from "@/lib/utils"
 
 export default async function ConnectSection() {
   const session = await getServerSession(authOptions)
   const subject = session?.user?.id ?? ""
+  // Hint: if cookie present assume connected for UX while backing store catches up
+  const c = await cookies()
+  const connectedHint = c.get("garmin_connected")?.value === "1"
 
-  const garminStatus = subject ? integrationService.getStatus(subject, "garmin") : "not_connected"
+  const garminStatus = connectedHint ? "connected" : subject ? integrationService.getStatus(subject, "garmin") : "not_connected"
 
   function statusLabel(status: string): string {
     switch (status) {
@@ -38,12 +43,12 @@ export default async function ConnectSection() {
           {garminStatus === "connected" ? (
             <div className="flex items-center gap-2">
               <span className="text-xs text-green-600">Connected</span>
-              <span className={cn(buttonVariants({ variant: "outline", size: "sm" }), "pointer-events-none opacity-50")}>Manage</span>
+              <DisconnectButton />
             </div>
           ) : garminStatus === "connecting" ? (
             <span className="text-xs text-amber-600">Connecting...</span>
           ) : (
-            <Link href="/api/connect/garmin/start" className={cn(buttonVariants({ variant: "default", size: "sm" }))}>Connect</Link>
+            <Link href="/api/garmin/authorize" className={cn(buttonVariants({ variant: "default", size: "sm" }))}>Connect</Link>
           )}
         </div>
       </Card>

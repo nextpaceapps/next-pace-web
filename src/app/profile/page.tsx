@@ -12,9 +12,17 @@ export default async function ProfilePage() {
     redirect("/login")
   }
   const user = session.user
-  const h = headers()
-  const url = new URL(h.get("x-url") ?? "http://localhost:3000/profile")
-  const connectError = url.searchParams.get("connect_error")
+  const h = await headers()
+  let connectError: string | null = null
+  const xUrl = h.get("x-url")
+  if (xUrl) {
+    try {
+      const url = new URL(xUrl)
+      connectError = url.searchParams.get("connect_error")
+    } catch {
+      // ignore parse errors
+    }
+  }
   return (
     <main className="mx-auto max-w-2xl p-6">
       <header className="mb-6">
@@ -39,8 +47,6 @@ export default async function ProfilePage() {
 
       {/* Connect section */}
       <div className="mt-6">
-        {/* Server component renders status and CTA */}
-        {/* @ts-expect-error Async Server Component */}
         <ConnectSection />
       </div>
     </main>
