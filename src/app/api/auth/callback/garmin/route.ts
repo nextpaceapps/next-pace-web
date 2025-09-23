@@ -6,6 +6,7 @@ import { garminAuthService } from "@/lib/services/garmin/service"
 import { getGarminConfig } from "@/lib/services/garmin/config"
 import { integrationService } from "@/lib/services/integrationService.mock"
 import { integrationMapping } from "@/lib/services/integrationService.mock"
+import { getDb } from "@/lib/db"
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions)
@@ -68,6 +69,31 @@ export async function GET(request: Request) {
     integrationService.setStatus(subject, "garmin", "connected")
     if (garminUser?.userId) {
       integrationMapping.setProviderUser(subject, garminUser.userId)
+      // Persist provider account association (idempotent)
+      try {
+        const db = await getDb()
+        // ensure user id
+        const userRow = await db.query('select id from users where subject=$1', [subject])
+        const userId = userRow.rows?.[0]?.id
+        if (userId) {
+          const pa = await db.query(
+            `insert into provider_accounts (provider, provider_user_id)
+             values ($1,$2)
+             on conflict (provider, provider_user_id) do update set provider_user_id=excluded.provider_user_id
+             returning id`,
+            ["garmin", garminUser.userId]
+          )
+          const providerAccountId = pa.rows[0].id
+          await db.query(
+            `insert into user_provider_accounts (user_id, provider_account_id, active)
+             values ($1,$2,true)
+             on conflict (user_id, provider_account_id) do update set active=true`,
+            [userId, providerAccountId]
+          )
+        }
+      } catch (e) {
+        console.error("[assoc:garmin:upsert:error]", e)
+      }
     }
     const res = NextResponse.redirect(new URL("/profile", process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"))
     res.cookies.set("garmin_pkce", "", { path: "/", maxAge: 0 })

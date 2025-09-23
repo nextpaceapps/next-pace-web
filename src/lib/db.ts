@@ -41,6 +41,24 @@ async function ensureSchema(c: Client) {
       created_at timestamptz not null default now()
     );
   `)
+  await c.query(`
+    create table if not exists provider_accounts (
+      id bigserial primary key,
+      provider text not null,
+      provider_user_id text not null,
+      created_at timestamptz not null default now(),
+      unique(provider, provider_user_id)
+    );
+  `)
+  await c.query(`
+    create table if not exists user_provider_accounts (
+      user_id bigint not null references users(id) on delete cascade,
+      provider_account_id bigint not null references provider_accounts(id) on delete cascade,
+      active boolean not null default true,
+      created_at timestamptz not null default now(),
+      unique(user_id, provider_account_id)
+    );
+  `)
 }
 
 
