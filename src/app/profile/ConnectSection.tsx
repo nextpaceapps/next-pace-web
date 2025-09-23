@@ -20,10 +20,22 @@ export default async function ConnectSection() {
 
   // Determine if the app user account exists; if not, disable Connect and show warning
   let hasUserAccount = false
+  let hasGarminAssociation = false
   if (subject) {
     const db = await getDb()
     const r = await db.query('select 1 from users where subject=$1', [subject])
     hasUserAccount = r.rowCount > 0
+    if (hasUserAccount) {
+      const assoc = await db.query(
+        `select 1
+         from user_provider_accounts upa
+         join users u on u.id = upa.user_id
+         join provider_accounts pa on pa.id = upa.provider_account_id
+         where u.subject = $1 and pa.provider = $2 and upa.active = true`,
+        [subject, "garmin"]
+      )
+      hasGarminAssociation = assoc.rowCount > 0
+    }
   }
 
   function statusLabel(status: string): string {
@@ -52,9 +64,9 @@ export default async function ConnectSection() {
         <div className="flex items-center justify-between">
           <div>
             <div className="font-medium">Garmin</div>
-            <div className="text-xs text-gray-500">{statusLabel(garminStatus)}</div>
+            <div className="text-xs text-gray-500">{statusLabel(hasGarminAssociation ? "connected" : garminStatus)}</div>
           </div>
-          {garminStatus === "connected" ? (
+          {hasGarminAssociation || garminStatus === "connected" ? (
             <div className="flex items-center gap-2">
               <span className="text-xs text-green-600">Connected</span>
               <DisconnectButton />
