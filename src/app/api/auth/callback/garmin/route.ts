@@ -63,11 +63,11 @@ export async function GET(request: Request) {
       codeVerifier: stored.codeVerifier,
       redirectUri,
     })
-    const garminUser = await garminAuthService.getUserId(tokens.access_token).catch(() => null)
-    await garminAuthService.getPermissions(tokens.access_token).catch(() => null)
+    const garminUser = await garminAuthService.getUserId(tokens.access_token).catch((e) => { console.error('[garmin:userId:error]', e); return null })
+    await garminAuthService.getPermissions(tokens.access_token).catch((e) => { console.error('[garmin:permissions:error]', e); return null })
 
-    integrationService.setStatus(subject, "garmin", "connected")
     if (garminUser?.userId) {
+      integrationService.setStatus(subject, "garmin", "connected")
       integrationMapping.setProviderUser(subject, garminUser.userId)
       // Persist provider account association (idempotent)
       try {
@@ -94,6 +94,10 @@ export async function GET(request: Request) {
       } catch (e) {
         console.error("[assoc:garmin:upsert:error]", e)
       }
+    } else {
+      const to = new URL("/profile", process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000")
+      to.searchParams.set("connect_error", "garmin_user_id")
+      return NextResponse.redirect(to)
     }
     const res = NextResponse.redirect(new URL("/profile", process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"))
     res.cookies.set("garmin_pkce", "", { path: "/", maxAge: 0 })
