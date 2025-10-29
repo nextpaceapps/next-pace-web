@@ -59,6 +59,29 @@ async function ensureSchema(c: Client) {
       unique(user_id, provider_account_id)
     );
   `)
+  // Providers catalog
+  await c.query(`
+    create table if not exists providers (
+      id bigserial primary key,
+      key text not null unique,
+      name text
+    );
+  `)
+  // New activities table focused on storing full raw payloads and minimal identifiers
+  await c.query(`
+    create table if not exists activities (
+      id bigserial primary key,
+      provider_id bigint not null references providers(id) on delete restrict,
+      provider_user_id text,
+      provider_activity_id text,
+      raw_payload jsonb not null,
+      source_ip text,
+      user_agent text,
+      signature text,
+      received_at timestamptz not null default now(),
+      unique(provider_id, provider_activity_id)
+    );
+  `)
 }
 
 
